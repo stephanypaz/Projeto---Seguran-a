@@ -1,0 +1,10 @@
+{
+  "name": "Hospital Portal Teste 8 (deu certo)",
+  "description": "Plataforma hospitalar de prontuário eletrônico com arquitetura Zero Trust, controle RBAC estrito (Médicos vs Enfermeiros), auditoria biométrica fotográfica por câmera e proteção de dados.",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
