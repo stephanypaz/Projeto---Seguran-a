@@ -351,10 +351,8 @@ export default function App() {
         {/* Top Clinical Navigation */}
         <Navbar
           currentUser={currentUser}
-          ndaState={ndaState}
           onOpenLoginModal={() => setIsLoginModalOpen(true)}
           onLogout={handleLogout}
-          onOpenNdaModal={() => setIsNdaModalOpen(true)}
         />
 
         {/* Main Content Area */}

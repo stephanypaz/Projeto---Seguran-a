@@ -5,45 +5,29 @@ import {
   User as UserIcon,
   LogOut,
 } from 'lucide-react';
-import { User, NdaState } from '../types';
+import { User } from '../types';
 
 interface NavbarProps {
   currentUser: User;
-  ndaState: NdaState;
-  activeNavTab?: string;
-  onSelectNavTab?: (tab: string) => void;
   onOpenLoginModal: () => void;
   onLogout?: () => void;
-  onOpenNdaModal: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
   currentUser,
-  ndaState,
-  activeNavTab = 'services',
-  onSelectNavTab,
   onOpenLoginModal,
   onLogout,
-  onOpenNdaModal,
 }) => {
   const isDoctor = currentUser.role === 'DOCTOR';
   const isNurse = currentUser.role === 'NURSE';
 
-  const navItems = isNurse
-    ? [
-        { id: 'services', label: 'Censo de Leitos' },
-      ]
-    : [
-        { id: 'services', label: 'Serviços & Leitos' },
-      ];
-
   return (
     <header className="sticky top-0 z-40 border-t-2 border-indigo-900/80 bg-white border-b border-slate-200/90 shadow-sm">
       <div className="border-b border-slate-100 bg-white">
-        <div className="mx-auto flex min-h-[6.25rem] max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto flex min-h-[6.25rem] max-w-7xl items-center justify-between gap-6 px-4 sm:px-6 lg:px-8">
           
           {/* Hospital Logo & Brand (Matching Unico Hospital Cross Logo style) */}
-          <div className="flex min-w-0 items-center gap-4 cursor-pointer" onClick={() => onSelectNavTab && onSelectNavTab('services')}>
+          <div className="flex min-w-0 items-center gap-4">
             <div className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-tr from-sky-500 to-teal-400 p-0.5 shadow-md shadow-sky-500/20">
               <div className="flex h-full w-full items-center justify-center rounded-[10px] bg-white">
                 <div className="relative flex items-center justify-center">
@@ -75,11 +59,11 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
 
           {/* Operator actions */}
-          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+          <div className="flex shrink-0 items-center gap-2 sm:gap-4">
             {/* Profile Avatar / Operator Switcher Pill */}
             <div
               onClick={onOpenLoginModal}
-              className="flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 hover:bg-slate-100 p-1.5 sm:px-3.5 sm:py-2 cursor-pointer transition shadow-xs"
+              className="flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 hover:bg-slate-100 p-1.5 sm:px-4 sm:py-2 cursor-pointer transition shadow-xs"
               title="Clique para alternar operador (Médico vs Enfermagem)"
             >
               <div
@@ -127,34 +111,6 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
       </div>
 
-      <div className="bg-slate-50 border-b border-slate-200">
-        <div className="mx-auto flex max-w-7xl items-center px-4 sm:px-6 lg:px-8">
-          
-          {/* Navigation Links */}
-          <nav className="flex items-center overflow-x-auto py-2 text-xs font-semibold text-slate-600 custom-scrollbar">
-            {navItems.map((item) => {
-              const isActive = activeNavTab === item.id;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => onSelectNavTab && onSelectNavTab(item.id)}
-                  className={`relative py-2 px-3 whitespace-nowrap transition ${
-                    isActive
-                      ? 'text-sky-600 font-bold'
-                      : 'hover:text-sky-600'
-                  }`}
-                >
-                  {item.label}
-                  {isActive && (
-                    <span className="absolute bottom-0 left-3 right-3 h-0.5 bg-sky-600 rounded-full" />
-                  )}
-                </button>
-              );
-            })}
-          </nav>
-
-        </div>
-      </div>
     </header>
   );
 };
