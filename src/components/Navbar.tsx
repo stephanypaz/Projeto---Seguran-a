@@ -9,7 +9,6 @@ import {
   User as UserIcon,
   HelpCircle,
   LogOut,
-  Camera
 } from 'lucide-react';
 import { User, NdaState, SecurityState } from '../types';
 
@@ -17,8 +16,6 @@ interface NavbarProps {
   currentUser: User;
   ndaState: NdaState;
   securityState: SecurityState;
-  accessPhotosCount?: number;
-  onOpenWhoEnteredModal?: () => void;
   activeNavTab?: string;
   onSelectNavTab?: (tab: string) => void;
   onOpenLoginModal: () => void;
@@ -35,8 +32,6 @@ export const Navbar: React.FC<NavbarProps> = ({
   currentUser,
   ndaState,
   securityState,
-  accessPhotosCount = 0,
-  onOpenWhoEnteredModal,
   activeNavTab = 'services',
   onSelectNavTab,
   onOpenLoginModal,
@@ -130,23 +125,6 @@ export const Navbar: React.FC<NavbarProps> = ({
               <Phone size={14} className="text-teal-600" />
               <span>Central: 1620</span>
             </div>
-
-            {/* Button "Quem Entrou / Registro Fotográfico" */}
-            {onOpenWhoEnteredModal && (
-              <button
-                type="button"
-                id="btn-nav-who-entered"
-                onClick={onOpenWhoEnteredModal}
-                className="inline-flex items-center gap-1.5 rounded-full border border-sky-300 bg-sky-50 text-sky-700 hover:bg-sky-100 px-3 py-2 text-xs font-bold transition shadow-2xs active:scale-95"
-                title="Ver fotos capturadas pela câmera dos operadores que entraram no sistema"
-              >
-                <Camera size={14} className="text-sky-600 shrink-0" />
-                <span className="hidden sm:inline">Quem Entrou</span>
-                <span className="rounded-full bg-sky-600 text-white text-[10px] px-1.5 py-0.2 font-mono font-bold">
-                  {accessPhotosCount}
-                </span>
-              </button>
-            )}
 
             {/* Blue Primary Button "Ask a Question / Suporte Clínico" */}
             <button

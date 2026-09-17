@@ -17,10 +17,16 @@
     "jsx": "react-jsx",
     "paths": {
       "@/*": [
-        "./*"
+        "../*"
       ]
     },
     "allowImportingTsExtensions": true,
     "noEmit": true
-  }
+  },
+  "include": [
+    "../src",
+    "../data",
+    "../server.ts",
+    "../tests"
+  ]
 }

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ShieldCheck, Lock, UserCheck, Stethoscope, HeartPulse, Shield, KeyRound, CheckCircle2, ArrowRight, X } from 'lucide-react';
 import { User } from '../types';
-import { MOCK_USERS } from '../data/mockUsers';
+import { MOCK_USERS } from '../../data/mockUsers';
 
 interface LoginModalProps {
   currentUser: User;
@@ -61,7 +61,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
         <div className="p-6 space-y-4">
           <div className="text-xs font-bold text-slate-700 flex items-center justify-between">
             <span>Selecione a Credencial do Operador:</span>
-            <span className="text-[11px] font-mono text-sky-700 font-medium">Autenticação Biométrica / FIDO2</span>
+            <span className="text-[11px] font-mono text-sky-700 font-medium">Login por credencial</span>
           </div>
 
           <div className="space-y-3">

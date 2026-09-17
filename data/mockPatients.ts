@@ -1,4 +1,4 @@
-import { Patient } from '../types';
+import { Patient } from '../src/types';
 
 export const MOCK_PATIENTS: Patient[] = [
   {

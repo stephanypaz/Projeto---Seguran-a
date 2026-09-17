@@ -192,32 +192,6 @@ export interface NdaState {
   organizationUnit?: string;
 }
 
-export interface AccessPhotoRecord {
-  id: string;
-  timestamp: string;
-  userId: string;
-  userName: string;
-  userRole: UserRole;
-  userRoleTitle: string;
-  registrationNumber: string;
-  photoDataUrl: string; // Base64 snapshot from notebook/tablet camera
-  deviceType: 'Notebook' | 'Tablet' | 'Dispositivo Móvel' | 'Desktop';
-  status: 'CAPTURED_SUCCESS' | 'PERMISSION_DENIED' | 'CAMERA_UNAVAILABLE';
-  hashProof: string;
-  ipAddress: string;
-  userAgent: string;
-  sharpnessScore?: number;
-  faceDetected?: boolean;
-  isSharp?: boolean;
-  eyesVisible?: boolean;
-  noseVisible?: boolean;
-  mouthVisible?: boolean;
-  isSpoofOrPresentation?: boolean;
-  isHandOrObject?: boolean;
-  livenessConfirmed?: boolean;
-  biometricValidationMessage?: string;
-}
-
 export interface SecurityState {
   isShieldLocked: boolean;
   autoLockTimeSeconds: number;

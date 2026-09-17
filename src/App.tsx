@@ -4,9 +4,9 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { User, Patient, NdaState, SecurityState, AuditLogEntry, VitalsMeasurement, AccessPhotoRecord } from './types';
-import { MOCK_USERS } from './data/mockUsers';
-import { MOCK_PATIENTS } from './data/mockPatients';
+import { User, Patient, NdaState, SecurityState, AuditLogEntry, VitalsMeasurement } from './types';
+import { MOCK_USERS } from '../data/mockUsers';
+import { MOCK_PATIENTS } from '../data/mockPatients';
 import { generateSHA256Hash, toNursePermittedPatient } from './utils/security';
 import { Navbar } from './components/Navbar';
 import { PatientList } from './components/PatientList';
@@ -21,36 +21,18 @@ import { AntiScreenshotGuard } from './components/AntiScreenshotGuard';
 import { LatencyLoader } from './components/LatencyLoader';
 import { ErrorPage404, ErrorPage500 } from './components/ErrorPages';
 import { AccessRestrictedModal } from './components/AccessRestrictedModal';
-import { EntranceCameraModal } from './components/EntranceCameraModal';
-import { WhoEnteredModal } from './components/WhoEnteredModal';
-import { getInitialAccessPhotos } from './data/mockAccessPhotos';
 import { ShieldCheck, Stethoscope, HeartPulse, Lock, Info, Activity, Building2 } from 'lucide-react';
 
 export default function App() {
   // Authentication Guard State (Requires login first before accessing records)
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const [pendingUser, setPendingUser] = useState<User | null>(null);
   const [showAccessRestrictedModal, setShowAccessRestrictedModal] = useState<boolean>(false);
-  const [showEntranceCameraModal, setShowEntranceCameraModal] = useState<boolean>(false);
   const [loginKey, setLoginKey] = useState<number>(0);
-
-  // Access Photos state (persisted in localStorage to always know who entered)
-  const [accessPhotos, setAccessPhotos] = useState<AccessPhotoRecord[]>(() => getInitialAccessPhotos());
-  const [isWhoEnteredModalOpen, setIsWhoEnteredModalOpen] = useState<boolean>(false);
 
   // Current logged in user (defaults to Doctor to showcase full suite, can switch anytime)
   const [currentUser, setCurrentUser] = useState<User>(MOCK_USERS[0]);
   const [patients, setPatients] = useState<Patient[]>(MOCK_PATIENTS);
   const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
-
-  // Sync access photos to localStorage
-  useEffect(() => {
-    try {
-      localStorage.setItem('hospital_access_photos', JSON.stringify(accessPhotos));
-    } catch {
-      // Ignore storage quota
-    }
-  }, [accessPhotos]);
 
   // NDA (Termo de Confidencialidade) State for Dynamic Data Masking (DDM)
   const [ndaState, setNdaState] = useState<NdaState>({
@@ -220,22 +202,13 @@ export default function App() {
     };
   }, [isAuthenticated, logAuditEvent]);
 
-  // Handle Entrance Photo Confirmation
-  const handleConfirmEntrance = (record: AccessPhotoRecord) => {
-    setAccessPhotos((prev) => [record, ...prev]);
-    const userToLogin = pendingUser || currentUser;
-    setCurrentUser(userToLogin);
+  // Complete authentication after the login credentials are validated.
+  const handleLoginSuccess = (user: User) => {
+    setCurrentUser(user);
     setIsAuthenticated(true);
-    setShowEntranceCameraModal(false);
-    setPendingUser(null);
     logAuditEvent(
-      'REGISTRO_FOTOGRAFICO_ENTRADA',
-      `Foto capturada com sucesso via câmera do ${record.deviceType} para operador ${userToLogin.name} (${userToLogin.registrationNumber})`,
-      'GRANTED'
-    );
-    logAuditEvent(
-      'TERMO_ACESSO_RESTRITO_ACEITO',
-      `Operador ${userToLogin.name} declarou ciência do aviso de acesso restrito (Art. 154-A CP) e autenticação fotográfica vinculada`,
+      'AUTENTICACAO_LOGIN_SUCCESS',
+      `Operador ${user.name} autenticado com credenciais válidas`,
       'GRANTED'
     );
   };
@@ -244,11 +217,10 @@ export default function App() {
   const handleSelectUser = (newUser: User) => {
     setIsLoginModalOpen(false);
     setSelectedPatientId(null);
-    setPendingUser(newUser);
-    setShowEntranceCameraModal(true);
+    setCurrentUser(newUser);
     logAuditEvent(
       'SOLICITACAO_TROCA_OPERADOR',
-      `Solicitada autenticação fotográfica de entrada para troca para ${newUser.roleTitle} (${newUser.registrationNumber})`,
+      `Operador alterado para ${newUser.roleTitle} (${newUser.registrationNumber})`,
       'GRANTED'
     );
   };
@@ -258,8 +230,6 @@ export default function App() {
     logAuditEvent('LOGOUT_TERMINAL', `Operador ${currentUser.name} desconectou-se do terminal`, 'GRANTED');
     setIsAuthenticated(false);
     setSelectedPatientId(null);
-    setPendingUser(null);
-    setShowEntranceCameraModal(false);
     setShowAccessRestrictedModal(false);
     setLoginKey((prev) => prev + 1);
   };
@@ -354,7 +324,7 @@ export default function App() {
 
   const selectedPatient = patients.find((p) => p.id === selectedPatientId);
 
-  // If not authenticated, render LoginScreen with camera entrance verification
+  // If not authenticated, render LoginScreen.
   if (!isAuthenticated) {
     return (
       <AntiScreenshotGuard
@@ -364,31 +334,9 @@ export default function App() {
       >
         <LoginScreen
           key={loginKey}
-          onLoginSuccess={(user) => {
-            setPendingUser(user);
-            setShowEntranceCameraModal(true);
-          }}
+          onLoginSuccess={handleLoginSuccess}
           onLogAuditEvent={logAuditEvent}
         />
-
-        {/* Modal Obrigatório de Captura de Foto pela Câmera na Entrada */}
-        {showEntranceCameraModal && pendingUser && (
-          <EntranceCameraModal
-            user={pendingUser}
-            onConfirm={handleConfirmEntrance}
-            onCancel={() => {
-              setShowEntranceCameraModal(false);
-              setPendingUser(null);
-              setIsAuthenticated(false);
-              setLoginKey((prev) => prev + 1);
-              logAuditEvent(
-                'ACESSO_FOTOGRAFICO_CANCELADO',
-                'Operador cancelou no registro fotográfico de entrada e retornou à tela inicial com credenciais zeradas',
-                'DENIED_RBAC'
-              );
-            }}
-          />
-        )}
       </AntiScreenshotGuard>
     );
   }
@@ -405,8 +353,6 @@ export default function App() {
           currentUser={currentUser}
           ndaState={ndaState}
           securityState={securityState}
-          accessPhotosCount={accessPhotos.length}
-          onOpenWhoEnteredModal={() => setIsWhoEnteredModalOpen(true)}
           onOpenLoginModal={() => setIsLoginModalOpen(true)}
           onLogout={handleLogout}
           onOpenNdaModal={() => setIsNdaModalOpen(true)}
@@ -504,34 +450,7 @@ export default function App() {
           <SecurityConsoleModal
             currentUser={currentUser}
             auditLogs={auditLogs}
-            accessPhotos={accessPhotos}
             onClose={() => setIsSecurityConsoleOpen(false)}
-          />
-        )}
-
-        {/* Modal da Galeria "Quem Entrou" com auditoria fotográfica completa */}
-        {isWhoEnteredModalOpen && (
-          <WhoEnteredModal
-            accessPhotos={accessPhotos}
-            onClose={() => setIsWhoEnteredModalOpen(false)}
-            onClearHistory={() => {
-              setAccessPhotos([]);
-              try {
-                localStorage.removeItem('hospital_access_photos');
-              } catch {}
-            }}
-          />
-        )}
-
-        {/* Modal de Câmera caso operador seja trocado dentro do sistema */}
-        {showEntranceCameraModal && pendingUser && isAuthenticated && (
-          <EntranceCameraModal
-            user={pendingUser}
-            onConfirm={handleConfirmEntrance}
-            onCancel={() => {
-              setShowEntranceCameraModal(false);
-              setPendingUser(null);
-            }}
           />
         )}
 

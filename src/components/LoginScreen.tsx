@@ -18,7 +18,7 @@ import {
   CreditCard
 } from 'lucide-react';
 import { User } from '../types';
-import { MOCK_USERS } from '../data/mockUsers';
+import { MOCK_USERS } from '../../data/mockUsers';
 import { sanitizeInput, isValidCPF } from '../utils/security';
 
 interface LoginScreenProps {

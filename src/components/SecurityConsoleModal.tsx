@@ -13,35 +13,23 @@ import {
   Play,
   Cpu,
   Key,
-  Database,
-  Camera,
-  Laptop,
-  Tablet,
-  Smartphone,
-  Clock,
-  ZoomIn,
-  Download,
-  ScanFace
+  Database
 } from 'lucide-react';
-import { AuditLogEntry, User, AccessPhotoRecord } from '../types';
+import { AuditLogEntry, User } from '../types';
 import { sanitizeInput, XssScanResult } from '../utils/security';
-import { downloadPhotoFile } from '../utils/camera';
 
 interface SecurityConsoleModalProps {
   currentUser: User;
   auditLogs: AuditLogEntry[];
-  accessPhotos?: AccessPhotoRecord[];
   onClose: () => void;
 }
 
 export const SecurityConsoleModal: React.FC<SecurityConsoleModalProps> = ({
   currentUser,
   auditLogs,
-  accessPhotos = [],
   onClose,
 }) => {
-  const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'CSP' | 'XSS' | 'ZERO_TRUST' | 'AUDIT' | 'ACCESS_PHOTOS'>('OVERVIEW');
-  const [selectedPhoto, setSelectedPhoto] = useState<AccessPhotoRecord | null>(null);
+  const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'CSP' | 'XSS' | 'ZERO_TRUST' | 'AUDIT'>('OVERVIEW');
 
   // XSS Interactive Tester State
   const [xssInput, setXssInput] = useState("<script>alert('XSS Hospitalar Malicioso');</script><img src='invalid.jpg' onerror='stealCookies()' />");
@@ -140,17 +128,6 @@ export const SecurityConsoleModal: React.FC<SecurityConsoleModalProps> = ({
           >
             <Terminal size={14} />
             Logs de Auditoria ({auditLogs.length})
-          </button>
-          <button
-            onClick={() => setActiveTab('ACCESS_PHOTOS')}
-            className={`flex items-center gap-2 border-b-2 px-4 py-2.5 transition ${
-              activeTab === 'ACCESS_PHOTOS'
-                ? 'border-sky-600 text-sky-800 font-bold'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            <Camera size={14} />
-            Fotos de Entrada / Quem Entrou ({accessPhotos.length})
           </button>
         </div>
 
@@ -487,153 +464,7 @@ export const SecurityConsoleModal: React.FC<SecurityConsoleModalProps> = ({
             </div>
           )}
 
-          {/* ACCESS_PHOTOS / QUEM ENTROU TAB */}
-          {activeTab === 'ACCESS_PHOTOS' && (
-            <div className="space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-4">
-                <div>
-                  <h3 className="font-display text-sm font-bold text-slate-900 flex items-center gap-2">
-                    <Camera size={16} className="text-sky-600" />
-                    Registro Fotográfico de Entrada nos Terminais (Auditoria Biométrica)
-                  </h3>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    Fotos capturadas pela câmera frontal do notebook ou tablet a cada autenticação no sistema hospitalar
-                  </p>
-                </div>
-                <span className="rounded-full bg-sky-100 text-sky-800 border border-sky-200 px-3 py-1 font-mono text-xs font-bold self-start sm:self-auto">
-                  {accessPhotos.length} fotos salvas
-                </span>
-              </div>
-
-              {accessPhotos.length === 0 ? (
-                <div className="text-center py-12 text-slate-400 bg-slate-50 rounded-2xl border border-slate-200">
-                  <Camera size={32} className="mx-auto text-slate-300 mb-2" />
-                  <p className="text-sm font-semibold text-slate-700">Nenhuma foto registrada ainda</p>
-                  <p className="text-xs text-slate-500">Ao entrar pelo login, a câmera capturará a foto do operador.</p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {accessPhotos.map((item) => (
-                    <div
-                      key={item.id}
-                      className="rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-xs hover:border-sky-400 hover:shadow-md transition flex flex-col justify-between"
-                    >
-                      <div
-                        className="relative aspect-video bg-black cursor-pointer overflow-hidden group"
-                        onClick={() => setSelectedPhoto(item)}
-                      >
-                        <img
-                          src={item.photoDataUrl}
-                          alt={`Acesso de ${item.userName}`}
-                          className="w-full h-full object-cover group-hover:scale-105 transition duration-200"
-                        />
-                        <div className="absolute top-2 left-2 bg-slate-900/80 backdrop-blur-xs text-white text-[10px] font-mono px-2 py-0.5 rounded-full flex items-center gap-1">
-                          {item.deviceType === 'Tablet' ? <Tablet size={10} /> : <Laptop size={10} />}
-                          {item.deviceType}
-                        </div>
-                        <div className="absolute inset-0 bg-sky-900/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition">
-                          <span className="bg-slate-900/80 text-white text-xs px-2.5 py-1 rounded-full flex items-center gap-1 border border-sky-400/40">
-                            <ZoomIn size={12} />
-                            Ampliar
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="p-3.5 flex-1 flex flex-col justify-between">
-                        <div>
-                          <div className="flex items-start justify-between gap-1">
-                            <span className="font-bold text-xs text-slate-900 leading-tight">
-                              {item.userName}
-                            </span>
-                            <span className="text-[10px] font-mono text-sky-700 font-bold bg-sky-50 px-1.5 py-0.5 rounded shrink-0">
-                              {item.registrationNumber}
-                            </span>
-                          </div>
-                          <p className="text-[11px] text-slate-500 mt-0.5">{item.userRoleTitle}</p>
-                        </div>
-
-                        <div className="mt-3 pt-2.5 border-t border-slate-100 text-[10px] text-slate-500 space-y-1.5 font-mono">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-1 text-slate-600">
-                              <Clock size={11} className="text-slate-400" />
-                              <span>{item.timestamp}</span>
-                            </div>
-                            {item.sharpnessScore !== undefined && (
-                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-sky-50 text-sky-700 font-bold border border-sky-200">
-                                <ScanFace size={10} />
-                                {item.sharpnessScore}% Nítido
-                              </span>
-                            )}
-                          </div>
-                          <div className="flex items-center justify-between pt-1">
-                            <span className="truncate max-w-[120px] text-slate-400" title={item.hashProof}>
-                              SHA: {item.hashProof.slice(0, 12)}...
-                            </span>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                const sanitized = item.userName.replace(/\s+/g, '_');
-                                downloadPhotoFile(item.photoDataUrl, `auditoria_${sanitized}_${Date.now()}.jpg`);
-                              }}
-                              className="inline-flex items-center gap-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 px-2 py-0.5 text-[10px] font-sans font-semibold transition"
-                            >
-                              <Download size={11} className="text-sky-600" />
-                              Baixar
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
         </div>
-
-        {/* Selected Photo Modal inside Security Console */}
-        {selectedPhoto && (
-          <div
-            className="fixed inset-0 z-60 flex items-center justify-center bg-black/85 p-4 backdrop-blur-sm"
-            onClick={() => setSelectedPhoto(null)}
-          >
-            <div
-              className="max-w-2xl w-full bg-slate-900 rounded-3xl border border-slate-700 overflow-hidden shadow-2xl p-5"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-center justify-between pb-3 border-b border-slate-800 mb-3 text-white">
-                <div>
-                  <h4 className="font-bold text-sm">{selectedPhoto.userName}</h4>
-                  <p className="text-xs text-slate-400">{selectedPhoto.userRoleTitle} &middot; {selectedPhoto.registrationNumber}</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const sanitized = selectedPhoto.userName.replace(/\s+/g, '_');
-                      downloadPhotoFile(selectedPhoto.photoDataUrl, `auditoria_${sanitized}_${Date.now()}.jpg`);
-                    }}
-                    className="inline-flex items-center gap-1 rounded-lg bg-sky-600 hover:bg-sky-500 text-white px-3 py-1 text-xs font-semibold shadow transition"
-                  >
-                    <Download size={13} />
-                    <span>Baixar Foto</span>
-                  </button>
-                  <button onClick={() => setSelectedPhoto(null)} className="text-slate-400 hover:text-white">
-                    <X size={18} />
-                  </button>
-                </div>
-              </div>
-              <div className="rounded-2xl overflow-hidden bg-black aspect-video border border-slate-800 flex items-center justify-center">
-                <img src={selectedPhoto.photoDataUrl} alt="Foto de acesso" className="w-full h-full object-contain" />
-              </div>
-              <div className="mt-3 text-xs font-mono text-slate-300 flex justify-between">
-                <span>{selectedPhoto.timestamp} ({selectedPhoto.deviceType})</span>
-                <span className="text-sky-400 truncate max-w-[200px]">SHA: {selectedPhoto.hashProof.slice(0, 24)}...</span>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Bottom Footer */}
         <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50/80 px-6 py-3.5 text-xs text-slate-500 font-medium">
