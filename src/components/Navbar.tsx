@@ -38,28 +38,27 @@ export const Navbar: React.FC<NavbarProps> = ({
       ];
 
   return (
-    <header className="sticky top-0 z-40 bg-white border-b border-slate-200/90 shadow-sm">
-      {/* Top Header Bar matching reference image (Logo, Email, Phone, Ask a Question button, Search, Profile) */}
+    <header className="sticky top-0 z-40 border-t-2 border-indigo-900/80 bg-white border-b border-slate-200/90 shadow-sm">
       <div className="border-b border-slate-100 bg-white">
-        <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto flex min-h-[6.25rem] max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
           
           {/* Hospital Logo & Brand (Matching Unico Hospital Cross Logo style) */}
-          <div className="flex items-center gap-3.5 cursor-pointer" onClick={() => onSelectNavTab && onSelectNavTab('services')}>
-            <div className="relative flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-tr from-sky-500 to-teal-400 p-0.5 shadow-md shadow-sky-500/20">
+          <div className="flex min-w-0 items-center gap-4 cursor-pointer" onClick={() => onSelectNavTab && onSelectNavTab('services')}>
+            <div className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-tr from-sky-500 to-teal-400 p-0.5 shadow-md shadow-sky-500/20">
               <div className="flex h-full w-full items-center justify-center rounded-[10px] bg-white">
                 <div className="relative flex items-center justify-center">
-                  <div className="h-6 w-2 bg-sky-600 rounded-sm"></div>
-                  <div className="absolute h-2 w-6 bg-teal-500 rounded-sm"></div>
+                  <div className="h-7 w-2.5 bg-sky-600 rounded-sm"></div>
+                  <div className="absolute h-2.5 w-7 bg-teal-500 rounded-sm"></div>
                 </div>
               </div>
             </div>
 
-            <div>
+            <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <span className="font-display text-xl font-extrabold tracking-tight text-slate-900">
+                <span className="font-display text-2xl font-extrabold tracking-tight text-slate-900">
                   UNICO <span className="text-sky-600 font-black">HOSPITALS</span>
                 </span>
-                <span className={`hidden sm:inline-block rounded-full px-2 py-0.5 font-mono text-[10px] font-bold border ${
+                <span className={`hidden md:inline-block rounded-full px-2.5 py-1 font-mono text-[10px] font-bold border ${
                   isNurse
                     ? 'bg-emerald-50 border-emerald-300 text-emerald-800'
                     : 'bg-sky-50 border-sky-200 text-sky-700'
@@ -67,7 +66,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   {isNurse ? 'ESTAÇÃO DE ENFERMAGEM' : 'PORTAL CLÍNICO (CRM)'}
                 </span>
               </div>
-              <p className="text-[11px] font-medium text-slate-500 hidden sm:block">
+              <p className="text-xs font-medium text-slate-500 hidden sm:block">
                 {isNurse
                   ? 'Assistência & Censo de Leitos • Minimização Estrita de Dados (LGPD)'
                   : 'Centro Hospitalar de Alta Complexidade & Prontuários'}
@@ -76,15 +75,15 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
 
           {/* Operator actions */}
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
             {/* Profile Avatar / Operator Switcher Pill */}
             <div
               onClick={onOpenLoginModal}
-              className="flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 hover:bg-slate-100 p-1.5 sm:px-3 sm:py-1.5 cursor-pointer transition shadow-xs"
+              className="flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 hover:bg-slate-100 p-1.5 sm:px-3.5 sm:py-2 cursor-pointer transition shadow-xs"
               title="Clique para alternar operador (Médico vs Enfermagem)"
             >
               <div
-                className={`flex h-7 w-7 items-center justify-center rounded-full text-white ${
+                className={`flex h-8 w-8 items-center justify-center rounded-full text-white ${
                   isDoctor
                     ? 'bg-sky-600'
                     : isNurse
@@ -116,7 +115,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             {onLogout && (
               <button
                 onClick={onLogout}
-                className="flex items-center gap-1 rounded-full border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 px-3 py-1.5 text-xs font-bold transition shadow-2xs"
+                className="flex items-center gap-1 rounded-full border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 px-3.5 py-2 text-xs font-bold transition shadow-2xs"
                 title="Desconectar do terminal e retornar à tela de login"
               >
                 <LogOut size={14} />
@@ -128,22 +127,21 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
       </div>
 
-      {/* Clinical navigation */}
-      <div className="bg-white border-b border-slate-200">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+      <div className="bg-slate-50 border-b border-slate-200">
+        <div className="mx-auto flex max-w-7xl items-center px-4 sm:px-6 lg:px-8">
           
           {/* Navigation Links */}
-          <nav className="flex items-center space-x-1 sm:space-x-4 overflow-x-auto py-2.5 text-xs font-semibold text-slate-600 custom-scrollbar">
+          <nav className="flex items-center overflow-x-auto py-2 text-xs font-semibold text-slate-600 custom-scrollbar">
             {navItems.map((item) => {
               const isActive = activeNavTab === item.id;
               return (
                 <button
                   key={item.id}
                   onClick={() => onSelectNavTab && onSelectNavTab(item.id)}
-                  className={`relative py-1.5 px-3 whitespace-nowrap transition rounded-lg ${
+                  className={`relative py-2 px-3 whitespace-nowrap transition ${
                     isActive
-                      ? 'text-sky-600 font-bold bg-sky-50'
-                      : 'hover:text-sky-600 hover:bg-slate-50'
+                      ? 'text-sky-600 font-bold'
+                      : 'hover:text-sky-600'
                   }`}
                 >
                   {item.label}
