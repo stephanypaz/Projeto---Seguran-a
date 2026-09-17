@@ -352,18 +352,9 @@ export default function App() {
         <Navbar
           currentUser={currentUser}
           ndaState={ndaState}
-          securityState={securityState}
           onOpenLoginModal={() => setIsLoginModalOpen(true)}
           onLogout={handleLogout}
           onOpenNdaModal={() => setIsNdaModalOpen(true)}
-          onOpenSecurityConsole={() => setIsSecurityConsoleOpen(true)}
-          onToggleShieldLock={() => {
-            setLockReason('MANUAL');
-            setSecurityState((prev) => ({ ...prev, isShieldLocked: !prev.isShieldLocked }));
-          }}
-          onTriggerSimulatedLatency={triggerSimulatedLatency}
-          onTriggerSimulated404={() => setActiveView('404')}
-          onTriggerSimulated500={() => setActiveView('500')}
         />
 
         {/* Main Content Area */}
