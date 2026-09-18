@@ -7,6 +7,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const API_RATE_WINDOW_MS = 60_000;
 const API_RATE_LIMIT = 60;
+const VITALS_RATE_WINDOW_MS = 60_000;
+const VITALS_RATE_LIMIT = 5;
 
 type RateLimitEntry = {
   count: number;
@@ -14,6 +16,7 @@ type RateLimitEntry = {
 };
 
 const apiRateLimits = new Map<string, RateLimitEntry>();
+const vitalsRateLimits = new Map<string, RateLimitEntry>();
 
 function apiRateLimit(req: express.Request, res: express.Response, next: express.NextFunction) {
   const now = Date.now();
@@ -30,7 +33,37 @@ function apiRateLimit(req: express.Request, res: express.Response, next: express
 
   if (entry.count > API_RATE_LIMIT) {
     res.setHeader('Retry-After', Math.ceil((entry.resetAt - now) / 1000));
-    res.status(429).json({ error: 'Too many requests' });
+    res.status(429).json({
+      error: 'Muitas requisições em pouco tempo.',
+      message: 'Tente novamente mais tarde.',
+      code: 'RATE_LIMIT_EXCEEDED',
+    });
+    return;
+  }
+
+  next();
+}
+
+function vitalsRateLimit(req: express.Request, res: express.Response, next: express.NextFunction) {
+  const now = Date.now();
+  const clientKey = req.ip || 'unknown-client';
+  const current = vitalsRateLimits.get(clientKey);
+  const entry = !current || current.resetAt <= now
+    ? { count: 1, resetAt: now + VITALS_RATE_WINDOW_MS }
+    : { count: current.count + 1, resetAt: current.resetAt };
+
+  vitalsRateLimits.set(clientKey, entry);
+  res.setHeader('X-Vitals-RateLimit-Limit', VITALS_RATE_LIMIT);
+  res.setHeader('X-Vitals-RateLimit-Remaining', Math.max(0, VITALS_RATE_LIMIT - entry.count));
+  res.setHeader('X-Vitals-RateLimit-Reset', Math.ceil(entry.resetAt / 1000));
+
+  if (entry.count > VITALS_RATE_LIMIT) {
+    res.setHeader('Retry-After', Math.ceil((entry.resetAt - now) / 1000));
+    res.status(429).json({
+      error: 'Limite atingido.',
+      message: 'Você só pode enviar 5 sinais vitais por minuto.',
+      code: 'VITALS_RATE_LIMIT_EXCEEDED',
+    });
     return;
   }
 
@@ -57,9 +90,70 @@ async function startServer() {
     next();
   });
   app.use('/api', apiRateLimit);
+  app.use('/api/vitals', vitalsRateLimit);
 
   app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  });
+
+  app.post('/api/vitals', (req, res) => {
+    res.status(201).json({
+      success: true,
+      message: 'Sinal vital registrado com sucesso.',
+      data: {
+        receivedAt: new Date().toISOString(),
+        limitPerMinute: VITALS_RATE_LIMIT,
+      },
+    });
+  });
+
+  app.use((req, res) => {
+    if (req.path.startsWith('/api/')) {
+      res.status(404).json({
+        error: 'Rota da API não encontrada.',
+        message: `A rota ${req.path} não existe neste backend.`,
+        code: 'API_NOT_FOUND',
+      });
+      return;
+    }
+
+    res.status(404).send('Página não encontrada.');
+  });
+
+  app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    const isJsonParseError =
+      err instanceof SyntaxError &&
+      'body' in err &&
+      typeof err.message === 'string' &&
+      err.message.toLowerCase().includes('json');
+
+
+
+// mensagens de erro personalizadas para diferentes tipos de erros
+    if (isJsonParseError) {
+      res.status(400).json({
+        error: 'JSON inválido.',
+        message: 'O corpo da requisição não pôde ser interpretado como JSON válido.',
+        code: 'INVALID_JSON',
+      });
+      return;
+    }
+
+    if (err && err.status === 429) {
+      res.status(429).json({
+        error: 'Muitas requisições em pouco tempo.',
+        message: 'Aguarde alguns instantes antes de tentar novamente.',
+        code: 'RATE_LIMIT_EXCEEDED',
+      });
+      return;
+    }
+
+    console.error('Erro interno do servidor:', err);
+    res.status(500).json({
+      error: 'Erro interno do servidor.',
+      message: 'Ocorreu uma falha inesperada. Tente novamente mais tarde.',
+      code: 'INTERNAL_SERVER_ERROR',
+    });
   });
 
   // Vite middleware for development
