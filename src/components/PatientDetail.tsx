@@ -149,7 +149,8 @@ export const PatientDetail: React.FC<PatientDetailProps> = ({
     }
 
     try {
-      const response = await fetch('/api/medical/imc', {
+      const apiBaseUrl = import.meta.env.DEV ? 'http://localhost:3000' : '';
+      const response = await fetch(`${apiBaseUrl}/api/medical/imc`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ peso, altura }),
@@ -170,12 +171,16 @@ export const PatientDetail: React.FC<PatientDetailProps> = ({
         throw new Error(payload?.message || 'Erro ao calcular IMC.');
       }
 
-      if (!payload?.data?.imc || !payload?.data?.classificacao) {
+      if (!payload?.data?.imc && payload?.data?.imc !== 0) {
         throw new Error('Resposta do servidor inválida.');
       }
 
+      if (!payload?.data?.classificacao) {
+        throw new Error('Classificação do IMC não retornada.');
+      }
+
       setBmiResult({
-        imc: payload.data.imc,
+        imc: Number(payload.data.imc),
         classificacao: payload.data.classificacao,
       });
       setBmiError('');
@@ -287,17 +292,21 @@ export const PatientDetail: React.FC<PatientDetailProps> = ({
 
               {bmiResult && (
                 <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
-                  IMC: <strong>{bmiResult.imc}</strong> • {bmiResult.classificacao}
+                  Resultado: <strong>IMC {bmiResult.imc}</strong> • {bmiResult.classificacao}
                 </div>
               )}
             </div>
           </form>
 
-          {bmiError && (
+          {bmiResult ? (
+            <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+              <strong>IMC calculado com sucesso:</strong> {bmiResult.imc} — {bmiResult.classificacao}
+            </div>
+          ) : bmiError ? (
             <div className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
               {bmiError}
             </div>
-          )}
+          ) : null}
         </div>
       )}
 
