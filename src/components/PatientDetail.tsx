@@ -136,6 +136,21 @@ export const PatientDetail: React.FC<PatientDetailProps> = ({
     setAdditionalNote('');
   };
 
+  const formatWeightInput = (value: string) => {
+    const digits = value.replace(/[^\d.]/g, '');
+    const [whole, decimal] = digits.split('.');
+
+    if (!whole && !decimal) return '';
+    if (!whole) return `0.${decimal.slice(0, 1)}`;
+
+    const normalizedWhole = whole.replace(/^0+(?=\d)/, '');
+    if (decimal !== undefined) {
+      return `${normalizedWhole}.${decimal.slice(0, 1)}`;
+    }
+
+    return normalizedWhole;
+  };
+
   const handleCalculateBmi = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -258,11 +273,10 @@ export const PatientDetail: React.FC<PatientDetailProps> = ({
             <div>
               <label className="mb-1 block text-[11px] font-bold text-slate-700">Peso (kg)</label>
               <input
-                type="number"
-                min="1"
-                step="0.1"
+                type="text"
+                inputMode="decimal"
                 value={bmiWeight}
-                onChange={(e) => setBmiWeight(e.target.value)}
+                onChange={(e) => setBmiWeight(formatWeightInput(e.target.value))}
                 placeholder="70.5"
                 className="w-full rounded-xl border border-slate-300 bg-white p-2.5 text-sm text-slate-900 focus:border-violet-500 focus:outline-none"
               />
@@ -298,8 +312,15 @@ export const PatientDetail: React.FC<PatientDetailProps> = ({
           </form>
 
           {bmiResult ? (
-            <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-              <strong>IMC calculado com sucesso:</strong> {bmiResult.imc} — {bmiResult.classificacao}
+            <div className={`mt-3 rounded-xl border px-4 py-3 text-sm ${
+              bmiResult.imc >= 18.5 && bmiResult.imc < 25
+                ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+                : 'border-amber-200 bg-amber-50 text-amber-800'
+            }`}>
+              <strong>Resultado:</strong> IMC {bmiResult.imc} — {bmiResult.classificacao}. 
+              {bmiResult.imc >= 18.5 && bmiResult.imc < 25
+                ? 'Paciente dentro do peso ideal.'
+                : 'Paciente fora do peso ideal.'}
             </div>
           ) : bmiError ? (
             <div className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
