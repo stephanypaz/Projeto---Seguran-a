@@ -67,6 +67,10 @@ export const PatientDetail: React.FC<PatientDetailProps> = ({
   const [newDosage, setNewDosage] = useState('');
   const [newRoute, setNewRoute] = useState('Oral');
   const [newFrequency, setNewFrequency] = useState('8 em 8 horas');
+  const [bmiWeight, setBmiWeight] = useState('');
+  const [bmiHeight, setBmiHeight] = useState('');
+  const [bmiResult, setBmiResult] = useState<{ imc: number; classificacao: string } | null>(null);
+  const [bmiError, setBmiError] = useState('');
 
   // Diagnosis note update state
   const [additionalNote, setAdditionalNote] = useState('');
@@ -132,6 +136,42 @@ export const PatientDetail: React.FC<PatientDetailProps> = ({
     setAdditionalNote('');
   };
 
+  const handleCalculateBmi = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const peso = Number(bmiWeight);
+    const altura = Number(bmiHeight);
+
+    if (!peso || !altura || peso <= 0 || altura <= 0) {
+      setBmiError('Informe peso e altura válidos.');
+      setBmiResult(null);
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/medical/imc', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ peso, altura }),
+      });
+
+      const payload = await response.json();
+
+      if (!response.ok) {
+        throw new Error(payload?.message || 'Erro ao calcular IMC.');
+      }
+
+      setBmiResult({
+        imc: payload.data.imc,
+        classificacao: payload.data.classificacao,
+      });
+      setBmiError('');
+    } catch (error) {
+      setBmiError(error instanceof Error ? error.message : 'Erro ao calcular IMC.');
+      setBmiResult(null);
+    }
+  };
+
   const chartData = patient.vitalsHistory.map((v) => ({
     time: v.timestamp,
     FC: v.heartRate,
@@ -185,6 +225,69 @@ export const PatientDetail: React.FC<PatientDetailProps> = ({
       </div>
 
       {/* Patient Header Card in Clean Hospital Light Style */}
+      {isDoctor && (
+        <div className="hospital-card p-5">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-violet-100 text-violet-700">
+              <Activity size={18} />
+            </div>
+            <div>
+              <h2 className="font-display text-lg font-bold text-slate-900">Cálculo de IMC</h2>
+              <p className="text-xs text-slate-500">O formulário envia apenas peso e altura. O servidor calcula o IMC final.</p>
+            </div>
+          </div>
+
+          <form onSubmit={handleCalculateBmi} className="grid gap-4 md:grid-cols-[140px_140px_1fr] md:items-end">
+            <div>
+              <label className="mb-1 block text-[11px] font-bold text-slate-700">Peso (kg)</label>
+              <input
+                type="number"
+                min="1"
+                step="0.1"
+                value={bmiWeight}
+                onChange={(e) => setBmiWeight(e.target.value)}
+                placeholder="70.5"
+                className="w-full rounded-xl border border-slate-300 bg-white p-2.5 text-sm text-slate-900 focus:border-violet-500 focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="mb-1 block text-[11px] font-bold text-slate-700">Altura (cm)</label>
+              <input
+                type="number"
+                min="1"
+                step="0.1"
+                value={bmiHeight}
+                onChange={(e) => setBmiHeight(e.target.value)}
+                placeholder="170"
+                className="w-full rounded-xl border border-slate-300 bg-white p-2.5 text-sm text-slate-900 focus:border-violet-500 focus:outline-none"
+              />
+            </div>
+
+            <div className="flex items-center gap-3">
+              <button
+                type="submit"
+                className="rounded-full bg-violet-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-violet-500 transition"
+              >
+                Calcular IMC
+              </button>
+
+              {bmiResult && (
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+                  IMC: <strong>{bmiResult.imc}</strong> • {bmiResult.classificacao}
+                </div>
+              )}
+            </div>
+          </form>
+
+          {bmiError && (
+            <div className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+              {bmiError}
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="hospital-card p-6 sm:p-7">
         <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-6">
           <div className="space-y-3 flex-1">

@@ -15,8 +15,31 @@ type RateLimitEntry = {
   resetAt: number;
 };
 
+type ImcRequest = {
+  peso: number;
+  altura: number;
+};
+
 const apiRateLimits = new Map<string, RateLimitEntry>();
 const vitalsRateLimits = new Map<string, RateLimitEntry>();
+
+function calculateImc(peso: number, altura: number): number {
+  if (!peso || !altura || altura <= 0 || peso <= 0) {
+    throw new Error('Peso e altura inválidos.');
+  }
+
+  const alturaEmMetros = altura / 100;
+  return Number((peso / (alturaEmMetros * alturaEmMetros)).toFixed(2));
+}
+
+function classifyImc(imc: number): string {
+  if (imc < 18.5) return 'Abaixo do peso';
+  if (imc < 25) return 'Peso normal';
+  if (imc < 30) return 'Sobrepeso';
+  if (imc < 35) return 'Obesidade grau I';
+  if (imc < 40) return 'Obesidade grau II';
+  return 'Obesidade grau III';
+}
 
 function apiRateLimit(req: express.Request, res: express.Response, next: express.NextFunction) {
   const now = Date.now();
@@ -105,6 +128,41 @@ async function startServer() {
         limitPerMinute: VITALS_RATE_LIMIT,
       },
     });
+  });
+
+  app.post('/api/medical/imc', (req, res) => {
+    const { peso, altura } = req.body as Partial<ImcRequest>;
+
+    if (typeof peso !== 'number' || typeof altura !== 'number') {
+      return res.status(400).json({
+        error: 'Dados inválidos.',
+        message: 'Envie apenas peso e altura em números.',
+        code: 'INVALID_IMC_INPUT',
+      });
+    }
+
+    try {
+      const imc = calculateImc(peso, altura);
+      const classificacao = classifyImc(imc);
+
+      return res.status(200).json({
+        success: true,
+        message: 'IMC calculado pelo servidor.',
+        data: {
+          peso,
+          altura,
+          imc,
+          classificacao,
+          calculadoEm: new Date().toISOString(),
+        },
+      });
+    } catch (error) {
+      return res.status(400).json({
+        error: 'IMC inválido.',
+        message: 'Peso e altura devem ser valores positivos e válidos.',
+        code: 'INVALID_IMC_VALUES',
+      });
+    }
   });
 
   app.use((req, res) => {
