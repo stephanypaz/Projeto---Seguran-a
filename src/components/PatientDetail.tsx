@@ -73,7 +73,7 @@ export const PatientDetail: React.FC<PatientDetailProps> = ({
   const [bmiError, setBmiError] = useState('');
 
   const formatBmiWeight = (value: string) => {
-    const cleaned = value.replace(/[^\d.]/g, '');
+    const cleaned = value.replace(',', '.').replace(/[^\d.]/g, '');
     const [whole, decimal] = cleaned.split('.');
 
     if (!whole && !decimal) return '';
@@ -81,10 +81,8 @@ export const PatientDetail: React.FC<PatientDetailProps> = ({
     const integerPart = whole || '0';
     const decimalPart = decimal ? decimal.slice(0, 1) : '';
 
-    return decimalPart ? `${integerPart}.${decimalPart}` : integerPart;
+    return decimalPart ? `${integerPart},${decimalPart}` : integerPart;
   };
-
-  const isBmiIdeal = bmiResult ? bmiResult.classificacao === 'Peso normal' : false;
 
   // Diagnosis note update state
   const [additionalNote, setAdditionalNote] = useState('');
@@ -153,7 +151,7 @@ export const PatientDetail: React.FC<PatientDetailProps> = ({
   const handleCalculateBmi = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const peso = Number(bmiWeight);
+    const peso = Number(bmiWeight.replace(',', '.'));
     const altura = Number(bmiHeight);
 
     if (!peso || !altura || peso <= 0 || altura <= 0) {
@@ -163,7 +161,7 @@ export const PatientDetail: React.FC<PatientDetailProps> = ({
     }
 
     try {
-      const response = await fetch('http://localhost:3000/api/medical/imc', {
+      const response = await fetch('/api/medical/imc', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ peso, altura }),
@@ -304,19 +302,15 @@ export const PatientDetail: React.FC<PatientDetailProps> = ({
 
               {bmiResult && (
                 <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
-                  Resultado: <strong>IMC {bmiResult.imc}</strong> • {bmiResult.classificacao}
+                  <strong>IMC {bmiResult.imc}</strong> • {bmiResult.classificacao}
                 </div>
               )}
             </div>
           </form>
 
           {bmiResult ? (
-            <div className={`mt-3 rounded-xl border px-4 py-3 text-sm ${
-              isBmiIdeal
-                ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
-                : 'border-amber-200 bg-amber-50 text-amber-800'
-            }`}>
-              <strong>Resultado:</strong> {isBmiIdeal ? 'Peso ideal.' : 'Fora do peso ideal.'} IMC {bmiResult.imc} — {bmiResult.classificacao}
+            <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+              <strong>Resultado:</strong> Seu IMC está {bmiResult.classificacao.toLowerCase()}.
             </div>
           ) : bmiError ? (
             <div className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
