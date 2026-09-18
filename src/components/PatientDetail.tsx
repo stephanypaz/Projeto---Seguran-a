@@ -72,6 +72,20 @@ export const PatientDetail: React.FC<PatientDetailProps> = ({
   const [bmiResult, setBmiResult] = useState<{ imc: number; classificacao: string } | null>(null);
   const [bmiError, setBmiError] = useState('');
 
+  const formatBmiWeight = (value: string) => {
+    const cleaned = value.replace(/[^\d.]/g, '');
+    const [whole, decimal] = cleaned.split('.');
+
+    if (!whole && !decimal) return '';
+
+    const integerPart = whole || '0';
+    const decimalPart = decimal ? decimal.slice(0, 1) : '';
+
+    return decimalPart ? `${integerPart}.${decimalPart}` : integerPart;
+  };
+
+  const isBmiIdeal = bmiResult ? bmiResult.classificacao === 'Peso normal' : false;
+
   // Diagnosis note update state
   const [additionalNote, setAdditionalNote] = useState('');
   const [activePrescriptionsList, setActivePrescriptionsList] = useState<Prescription[]>(
@@ -134,21 +148,6 @@ export const PatientDetail: React.FC<PatientDetailProps> = ({
     onLogAuditEvent('ATUALIZACAO_CONDUTA_MEDICA', `Evolução Clínica - Prontuário ${patient.recordNumber}`, 'GRANTED');
     setIsDiagnosisModalOpen(false);
     setAdditionalNote('');
-  };
-
-  const formatWeightInput = (value: string) => {
-    const digits = value.replace(/[^\d.]/g, '');
-    const [whole, decimal] = digits.split('.');
-
-    if (!whole && !decimal) return '';
-    if (!whole) return `0.${decimal.slice(0, 1)}`;
-
-    const normalizedWhole = whole.replace(/^0+(?=\d)/, '');
-    if (decimal !== undefined) {
-      return `${normalizedWhole}.${decimal.slice(0, 1)}`;
-    }
-
-    return normalizedWhole;
   };
 
   const handleCalculateBmi = async (e: React.FormEvent) => {
@@ -276,7 +275,7 @@ export const PatientDetail: React.FC<PatientDetailProps> = ({
                 type="text"
                 inputMode="decimal"
                 value={bmiWeight}
-                onChange={(e) => setBmiWeight(formatWeightInput(e.target.value))}
+                onChange={(e) => setBmiWeight(formatBmiWeight(e.target.value))}
                 placeholder="70.5"
                 className="w-full rounded-xl border border-slate-300 bg-white p-2.5 text-sm text-slate-900 focus:border-violet-500 focus:outline-none"
               />
@@ -313,14 +312,11 @@ export const PatientDetail: React.FC<PatientDetailProps> = ({
 
           {bmiResult ? (
             <div className={`mt-3 rounded-xl border px-4 py-3 text-sm ${
-              bmiResult.imc >= 18.5 && bmiResult.imc < 25
+              isBmiIdeal
                 ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
                 : 'border-amber-200 bg-amber-50 text-amber-800'
             }`}>
-              <strong>Resultado:</strong> IMC {bmiResult.imc} — {bmiResult.classificacao}. 
-              {bmiResult.imc >= 18.5 && bmiResult.imc < 25
-                ? 'Paciente dentro do peso ideal.'
-                : 'Paciente fora do peso ideal.'}
+              <strong>Resultado:</strong> {isBmiIdeal ? 'Peso ideal.' : 'Fora do peso ideal.'} IMC {bmiResult.imc} — {bmiResult.classificacao}
             </div>
           ) : bmiError ? (
             <div className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
