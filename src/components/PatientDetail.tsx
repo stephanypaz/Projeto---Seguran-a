@@ -149,8 +149,7 @@ export const PatientDetail: React.FC<PatientDetailProps> = ({
     }
 
     try {
-      const apiBaseUrl = import.meta.env.DEV ? 'http://localhost:3000' : '';
-      const response = await fetch(`${apiBaseUrl}/api/medical/imc`, {
+      const response = await fetch('http://localhost:3000/api/medical/imc', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ peso, altura }),
