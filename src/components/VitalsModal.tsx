@@ -3,6 +3,30 @@ import { Activity, Heart, Thermometer, Droplets, Wind, Plus, X, AlertTriangle, C
 import { User, VitalsMeasurement } from '../types';
 import { sanitizeInput } from '../utils/security';
 
+const VITALS_RATE_LIMIT = 5;
+const VITALS_RATE_WINDOW_MS = 60 * 1000;
+const VITALS_STORAGE_KEY = 'vital_requests_ts';
+
+function getRecentVitalTimestamps(): number[] {
+  if (typeof window === 'undefined') return [];
+
+  try {
+    const raw = window.localStorage.getItem(VITALS_STORAGE_KEY);
+    if (!raw) return [];
+
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.map(Number).filter(Number.isFinite) : [];
+  } catch {
+    return [];
+  }
+}
+
+function setRecentVitalTimestamps(timestamps: number[]) {
+  if (typeof window === 'undefined') return;
+
+  window.localStorage.setItem(VITALS_STORAGE_KEY, JSON.stringify(timestamps));
+}
+
 interface VitalsModalProps {
   currentUser: User;
   patientName: string;
@@ -25,12 +49,27 @@ export const VitalsModal: React.FC<VitalsModalProps> = ({
   const [bloodGlucose, setBloodGlucose] = useState<number>(100);
   const [glasgowScale, setGlasgowScale] = useState<number>(15);
   const [notes, setNotes] = useState<string>('');
+  const [errorMessage, setErrorMessage] = useState<string>('');
 
   // Live sanitization preview for XSS protection showcase
   const scanResult = sanitizeInput(notes);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    const now = Date.now();
+    const recentRequests = getRecentVitalTimestamps().filter(
+      (timestamp) => now - timestamp < VITALS_RATE_WINDOW_MS
+    );
+
+    if (recentRequests.length >= VITALS_RATE_LIMIT) {
+      setErrorMessage('Limite atingido. Você só pode enviar 5 sinais vitais por minuto.');
+      return;
+    }
+
+    const nextRequests = [...recentRequests, now];
+    setRecentVitalTimestamps(nextRequests);
+    setErrorMessage('');
 
     const newMeasurement: VitalsMeasurement = {
       id: `vit_${Date.now()}`,
@@ -80,6 +119,12 @@ export const VitalsModal: React.FC<VitalsModalProps> = ({
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="max-h-[75vh] overflow-y-auto p-6 space-y-5">
+          {errorMessage && (
+            <div className="rounded-2xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-medium text-rose-700">
+              {errorMessage}
+            </div>
+          )}
+
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {/* Heart Rate */}
             <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3.5">
