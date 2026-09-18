@@ -155,10 +155,23 @@ export const PatientDetail: React.FC<PatientDetailProps> = ({
         body: JSON.stringify({ peso, altura }),
       });
 
-      const payload = await response.json();
+      const rawText = await response.text();
+      let payload: any = {};
+
+      if (rawText) {
+        try {
+          payload = JSON.parse(rawText);
+        } catch {
+          payload = { message: 'Não foi possível calcular o IMC no momento.' };
+        }
+      }
 
       if (!response.ok) {
         throw new Error(payload?.message || 'Erro ao calcular IMC.');
+      }
+
+      if (!payload?.data?.imc || !payload?.data?.classificacao) {
+        throw new Error('Resposta do servidor inválida.');
       }
 
       setBmiResult({
