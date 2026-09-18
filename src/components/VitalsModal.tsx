@@ -53,21 +53,31 @@ export const VitalsModal: React.FC<VitalsModalProps> = ({
 
   // Live sanitization preview for XSS protection showcase
   const scanResult = sanitizeInput(notes);
+  const recentRequests = getRecentVitalTimestamps().filter(
+    (timestamp) => Date.now() - timestamp < VITALS_RATE_WINDOW_MS
+  );
+  const isLimitReached = recentRequests.length >= VITALS_RATE_LIMIT;
+
+  React.useEffect(() => {
+    if (isLimitReached) {
+      setErrorMessage('Limite atingido. Você só pode enviar 5 sinais vitais por minuto.');
+    }
+  }, [isLimitReached]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     const now = Date.now();
-    const recentRequests = getRecentVitalTimestamps().filter(
+    const freshRequests = getRecentVitalTimestamps().filter(
       (timestamp) => now - timestamp < VITALS_RATE_WINDOW_MS
     );
 
-    if (recentRequests.length >= VITALS_RATE_LIMIT) {
+    if (freshRequests.length >= VITALS_RATE_LIMIT) {
       setErrorMessage('Limite atingido. Você só pode enviar 5 sinais vitais por minuto.');
       return;
     }
 
-    const nextRequests = [...recentRequests, now];
+    const nextRequests = [...freshRequests, now];
     setRecentVitalTimestamps(nextRequests);
     setErrorMessage('');
 
@@ -312,10 +322,15 @@ export const VitalsModal: React.FC<VitalsModalProps> = ({
             </button>
             <button
               type="submit"
-              className="inline-flex items-center gap-2 rounded-full bg-sky-600 px-5 py-2 text-xs font-bold text-white hover:bg-sky-500 transition shadow-md shadow-sky-600/20 active:scale-95"
+              disabled={isLimitReached}
+              className={`inline-flex items-center gap-2 rounded-full px-5 py-2 text-xs font-bold transition shadow-md ${
+                isLimitReached
+                  ? 'cursor-not-allowed bg-slate-300 text-slate-500 shadow-none'
+                  : 'bg-sky-600 text-white hover:bg-sky-500 shadow-sky-600/20 active:scale-95'
+              }`}
             >
               <CheckCircle2 size={15} />
-              Confirmar & Salvar Aferição
+              {isLimitReached ? 'Limite atingido' : 'Confirmar & Salvar Aferição'}
             </button>
           </div>
         </form>
